@@ -24,9 +24,25 @@ function M.defaults()
   return vim.deepcopy(defaults)
 end
 
+--- Whether the `lua/user/` overlay should be read at all.
+---
+--- `NVIM_ENOUGH_NO_USER=1` turns it off. CI uses it to measure the shipped
+--- config on its own, and it is the quickest way to find out whether a problem
+--- is yours or ours:
+---
+---     NVIM_ENOUGH_NO_USER=1 nvim
+---@return boolean
+function M.user_enabled()
+  return vim.env.NVIM_ENOUGH_NO_USER ~= "1"
+end
+
 --- Merge `lua/user/init.lua` over the defaults, if it exists.
 ---@return enough.Config
 function M.load()
+  if not M.user_enabled() then
+    return M.options
+  end
+
   local ok, user = pcall(require, "user")
   if not ok or type(user) ~= "table" then
     return M.options
