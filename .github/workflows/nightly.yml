@@ -16,6 +16,18 @@ on:
       - "lua/enough/lang/**"
       - "scripts/lsp.lua"
       - ".github/workflows/nightly.yml"
+  # Also on pull requests that touch the LSP layer. That is rare, and it is
+  # exactly when the slow test is worth paying for — waiting for the nightly
+  # run means finding out after merging.
+  #
+  # The paths are repeated rather than shared with a YAML anchor: GitHub
+  # Actions does not support anchors in workflow files.
+  pull_request:
+    paths:
+      - "lua/enough/plugins/lspconfig.lua"
+      - "lua/enough/lang/**"
+      - "scripts/lsp.lua"
+      - ".github/workflows/nightly.yml"
   workflow_dispatch:
 
 jobs:
