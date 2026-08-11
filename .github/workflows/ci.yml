@@ -42,6 +42,11 @@ jobs:
           NVIM_ENOUGH_NO_USER: "1"
         run: nvim --headless -c "luafile scripts/budget.lua" -c "qa!"
 
+      # Every documented keymap must exist, every existing one must be
+      # documented, and all of them must carry a description.
+      - name: Keymap documentation
+        run: nvim --headless -c "Lazy! load all" -c "luafile scripts/docs.lua" -c "qa!"
+
   treesitter:
     name: treesitter parsers
     runs-on: ubuntu-latest
