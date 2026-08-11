@@ -8,7 +8,7 @@
 return {
   "neovim/nvim-lspconfig",
   dependencies = {
-    "hrsh7th/cmp-nvim-lsp",
+    "saghen/blink.cmp",
     "nvim-telescope/telescope.nvim",
     "williamboman/mason.nvim",
     "williamboman/mason-lspconfig.nvim",
@@ -66,11 +66,9 @@ return {
     })
     require("mason-tool-installer").setup({ ensure_installed = tools })
 
-    local capabilities = vim.tbl_deep_extend(
-      "force",
-      vim.lsp.protocol.make_client_capabilities(),
-      require("cmp_nvim_lsp").default_capabilities()
-    )
+    -- blink.cmp advertises what it can actually do (snippets, resolve support,
+    -- and so on); servers tailor their replies to it.
+    local capabilities = require("blink.cmp").get_lsp_capabilities()
 
     -- Applies to every server, including any a user adds from lua/user/.
     vim.lsp.config("*", { capabilities = capabilities })
