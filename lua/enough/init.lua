@@ -37,6 +37,9 @@ function M.setup()
   require("enough.lazy").setup()
   require("enough.keymaps")
   require("enough.autocmds")
+  -- Anything a language pack needs that is not data, such as filetype-local
+  -- mappings. Runs last so packs can rely on everything else existing.
+  require("enough.lang").setup()
 end
 
 return M
