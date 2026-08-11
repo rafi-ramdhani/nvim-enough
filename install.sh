@@ -192,7 +192,13 @@ if [ "$DRY_RUN" = 1 ]; then
   exit 0
 fi
 
-reply="$(ask "Proceed? [y/N] " "n")"
+# --yes means yes, not "take the default" — the default here is deliberately no,
+# so that a non-interactive run without --yes changes nothing.
+if [ "$ASSUME_YES" = 1 ]; then
+  reply="y"
+else
+  reply="$(ask "Proceed? [y/N] " "n")"
+fi
 case "$reply" in
   [yY]|[yY][eE][sS]) ;;
   *) info "Cancelled."; exit 0 ;;
