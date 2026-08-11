@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  boot:
+    name: boot (${{ matrix.nvim }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # nightly is here on purpose: this config has twice been broken by an
+        # upstream plugin changing its API, and catching that early is the
+        # whole point.
+        nvim: ["stable", "nightly"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.nvim }}
+
+      # The config lives at ~/.config/nvim in real life; CI should be no
+      # different, so bugs that only appear when installed are caught here.
+      - name: Install as ~/.config/nvim
+        run: |
+          mkdir -p ~/.config
+          ln -s "$GITHUB_WORKSPACE" ~/.config/nvim
+
+      - name: Install plugins
+        run: nvim --headless "+Lazy! sync" +qa
+
+      - name: Smoke test
+        run: nvim --headless -c "luafile scripts/smoke.lua" -c "qa!"
+
+      - name: Plugin budget
+        env:
+          NVIM_ENOUGH_NO_USER: "1"
+        run: nvim --headless -c "luafile scripts/budget.lua" -c "qa!"
+
+  treesitter:
+    name: treesitter parsers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      # nvim-treesitter's main branch needs the CLI, and installs nothing while
+      # reporting success without it. Note the name: Homebrew's `tree-sitter`
+      # formula is the library; the CLI is `tree-sitter-cli`.
+      #
+      # Prebuilt binary rather than `cargo install`, which takes minutes.
+      - name: Install tree-sitter CLI
+        run: |
+          curl -fsSL https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-x64.gz \
+            | gunzip > /usr/local/bin/tree-sitter
+          chmod +x /usr/local/bin/tree-sitter
+          tree-sitter --version
+
+      - name: Install as ~/.config/nvim
+        run: |
+          mkdir -p ~/.config
+          ln -s "$GITHUB_WORKSPACE" ~/.config/nvim
+
+      - name: Install plugins
+        run: nvim --headless "+Lazy! sync" +qa
+
+      - name: Install parsers and check highlighting
+        run: nvim --headless -c "luafile scripts/treesitter.lua" -c "qa!"
+
+  shellcheck:
+    name: shellcheck install.sh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: shellcheck install.sh
+
+  format:
+    name: stylua
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check init.lua lua scripts

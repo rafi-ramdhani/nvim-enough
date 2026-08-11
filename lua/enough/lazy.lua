@@ -34,6 +34,9 @@ end
 --- rather than just the directory.
 ---@return boolean
 local function has_user_plugins()
+  if not require("enough.config").user_enabled() then
+    return false
+  end
   local dir = vim.fn.stdpath("config") .. "/lua/user/plugins"
   if vim.fn.isdirectory(dir) ~= 1 then
     return false
