@@ -1,1 +1,4 @@
 lazy-lock.json
+
+# Your own configuration. Copy user.example/ here; it never conflicts on pull.
+lua/user/
