@@ -1,54 +1,53 @@
+-- Completion.
+--
+-- blink.cmp replaces nvim-cmp and its source plugins, and uses Neovim's native
+-- `vim.snippet` rather than a separate snippet engine. That is six plugins
+-- (nvim-cmp, cmp-nvim-lsp, cmp-path, cmp-buffer, cmp_luasnip, LuaSnip) down to
+-- one, without losing snippets: friendly-snippets is a collection of JSON
+-- files, so it stays.
 return {
-  "hrsh7th/nvim-cmp",
-  dependencies = {
-    {
-      "L3MON4D3/LuaSnip",
-      version = "v2.*",
-      build = "make install_jsregexp",
-      dependencies = { "rafamadriz/friendly-snippets" },
-    },
-    "saadparwaiz1/cmp_luasnip",
-    "hrsh7th/cmp-nvim-lsp",
-    "hrsh7th/cmp-path",
-    "hrsh7th/cmp-buffer",
-  },
-  config = function()
-    require("luasnip.loaders.from_vscode").lazy_load()
-    local cmp = require("cmp")
-    local luasnip = require("luasnip")
-    luasnip.config.setup({})
+  "saghen/blink.cmp",
+  -- Pinned to v1. Upstream describes v2 as "under active development with many
+  -- breaking changes" and recommends this for anyone wanting stability.
+  version = "1.*",
+  event = "InsertEnter",
+  dependencies = { "rafamadriz/friendly-snippets" },
 
-    cmp.setup({
-      snippet = {
-        expand = function(args)
-          luasnip.lsp_expand(args.body)
-        end,
-      },
-      completion = { completeopt = "menu,menuone,noinsert" },
-      mapping = cmp.mapping.preset.insert({
-        ["<C-n>"] = cmp.mapping.select_next_item(),
-        ["<C-p>"] = cmp.mapping.select_prev_item(),
-        ["<C-b>"] = cmp.mapping.scroll_docs(-4),
-        ["<C-f>"] = cmp.mapping.scroll_docs(4),
-        ["<C-y>"] = cmp.mapping.confirm({ select = true }),
-        ["<C-Space>"] = cmp.mapping.complete({}),
-        ["<C-l>"] = cmp.mapping(function()
-          if luasnip.expand_or_locally_jumpable() then
-            luasnip.expand_or_jump()
-          end
-        end, { "i", "s" }),
-        ["<C-h>"] = cmp.mapping(function()
-          if luasnip.locally_jumpable(-1) then
-            luasnip.jump(-1)
-          end
-        end, { "i", "s" }),
-      }),
-      sources = cmp.config.sources({
-        { name = "nvim_lsp" },
-        { name = "luasnip" },
-        { name = "path" },
-        { name = "buffer" },
-      }),
-    })
-  end,
+  ---@module "blink.cmp"
+  ---@type blink.cmp.Config
+  opts = {
+    -- The nvim-cmp bindings this config used, kept so muscle memory survives
+    -- the swap.
+    keymap = {
+      preset = "none",
+      ["<C-n>"] = { "select_next", "fallback" },
+      ["<C-p>"] = { "select_prev", "fallback" },
+      ["<C-b>"] = { "scroll_documentation_up", "fallback" },
+      ["<C-f>"] = { "scroll_documentation_down", "fallback" },
+      ["<C-y>"] = { "accept", "fallback" },
+      ["<C-Space>"] = { "show", "show_documentation", "hide_documentation" },
+      ["<C-l>"] = { "snippet_forward", "fallback" },
+      ["<C-h>"] = { "snippet_backward", "fallback" },
+      ["<C-e>"] = { "hide", "fallback" },
+    },
+
+    sources = {
+      default = { "lsp", "path", "snippets", "buffer" },
+    },
+
+    -- Native vim.snippet, which also reads friendly-snippets.
+    snippets = { preset = "default" },
+
+    completion = {
+      documentation = { auto_show = true, auto_show_delay_ms = 200 },
+      menu = { draw = { treesitter = { "lsp" } } },
+    },
+
+    -- Downloads a prebuilt binary and falls back to the Lua matcher with a
+    -- warning if that is not possible, so a fresh install cannot hard-fail.
+    fuzzy = { implementation = "prefer_rust_with_warning" },
+  },
+
+  -- Lets lua/user/ append sources without restating the defaults.
+  opts_extend = { "sources.default" },
 }
