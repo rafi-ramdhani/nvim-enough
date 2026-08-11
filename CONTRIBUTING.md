@@ -15,12 +15,22 @@ make check          # everything CI runs
 | `make budget` | Fails if the core plugin count changed |
 | `make docs` | Fails if the README and the real keymaps disagree |
 | `make treesitter` | Installs parsers, asserts highlighting attaches |
+| `make lsp` | Installs real language servers and checks they answer |
 | `make lint` | shellcheck on `install.sh` |
 | `make fmt` | stylua |
 
 CI runs the same checks on Neovim **stable and nightly**. Nightly is
 deliberate: this config has twice been broken by an upstream plugin changing
 its API, and catching that a week early is worth the noise.
+
+`make lsp` is not part of `make check`. It downloads real language servers, so
+it runs on a schedule instead — see `.github/workflows/nightly.yml`. Run it by
+hand when you change `lspconfig.lua` or a language pack's `servers`. It needs
+the relevant packs enabled in your `lua/user/init.lua`.
+
+Adding a fixture to `scripts/lsp.lua` is the best way to cover a new pack. Make
+it prove something semantic — a type inferred, an error found — because a
+server that merely connects is not evidence that anything works.
 
 ## The two rules
 

@@ -1,4 +1,4 @@
-.PHONY: check smoke budget docs treesitter lint fmt fmt-check
+.PHONY: check smoke budget docs treesitter lsp lint fmt fmt-check
 
 # Everything CI runs, locally.
 check: smoke budget docs lint fmt-check
@@ -16,6 +16,11 @@ budget:
 
 treesitter:
 	nvim --headless -c "luafile scripts/treesitter.lua" -c "qa!"
+
+# Downloads real language servers, so this is slow and runs nightly in CI
+# rather than on every change. Needs the relevant language packs enabled.
+lsp:
+	nvim --headless -c "Lazy! load nvim-lspconfig" -c "luafile scripts/lsp.lua" -c "qa!"
 
 lint:
 	shellcheck install.sh

@@ -1,0 +1,59 @@
+name: Nightly
+
+# The end-to-end language server test downloads real servers through mason, so
+# it is far too slow for every pull request. It runs on a schedule instead,
+# which also catches breakage that arrives from upstream rather than from us —
+# a new mason release, a server that changes its startup behaviour, a plugin
+# that drops an API. Twice already, this config broke without a commit.
+on:
+  schedule:
+    # 03:00 UTC daily.
+    - cron: "0 3 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "lua/enough/plugins/lspconfig.lua"
+      - "lua/enough/lang/**"
+      - "scripts/lsp.lua"
+      - ".github/workflows/nightly.yml"
+  workflow_dispatch:
+
+jobs:
+  lsp:
+    name: language servers (${{ matrix.nvim }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        nvim: ["stable", "nightly"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.nvim }}
+
+      # pyright is an npm package; lua-language-server is a binary download.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install as ~/.config/nvim
+        run: |
+          mkdir -p ~/.config
+          ln -s "$GITHUB_WORKSPACE" ~/.config/nvim
+
+      # Two packs, so the test covers both the default language and one that
+      # only loads because a user asked for it.
+      - name: Enable the language packs under test
+        run: |
+          mkdir -p lua/user
+          echo 'return { languages = { "lua", "python" } }' > lua/user/init.lua
+
+      - name: Install plugins
+        run: nvim --headless "+Lazy! sync" +qa
+
+      - name: Language servers attach and answer
+        run: nvim --headless -c "Lazy! load nvim-lspconfig" -c "luafile scripts/lsp.lua" -c "qa!"
