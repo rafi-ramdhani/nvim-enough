@@ -1,27 +1,38 @@
 -- Treesitter highlighting.
 --
--- The branch is pinned deliberately. Upstream made `main` the default branch,
--- and `main` is a rewrite that calls `vim.list.unique()` — a Neovim 0.12 API.
--- On Neovim 0.11 it cannot install a single parser, and because its `setup()`
--- silently ignores `highlight`, `ensure_installed` and `auto_install`, it fails
--- quietly rather than loudly.
+-- The branch is pinned deliberately. `master` is archived, and `main` is a
+-- rewrite: `setup()` no longer accepts `highlight`, `ensure_installed` or
+-- `auto_install`, and silently ignores them if passed. Parsers are installed
+-- explicitly, and highlighting is started per buffer with
+-- `vim.treesitter.start()`.
 --
--- `master` supports Neovim 0.9 through 0.11 and is what this config targets.
+-- `main` requires Neovim 0.12 (it calls `vim.list.unique()`), which is what
+-- lua/enough/init.lua checks for before anything else loads.
 return {
   "nvim-treesitter/nvim-treesitter",
-  branch = "master",
+  branch = "main",
   build = ":TSUpdate",
   lazy = false,
 
   config = function()
-    ---@diagnostic disable-next-line: missing-fields
-    require("nvim-treesitter.configs").setup({
-      ensure_installed = require("enough.parsers").wanted(),
-      auto_install = false,
-      highlight = {
-        enable = true,
-        additional_vim_regex_highlighting = false,
-      },
+    require("nvim-treesitter").setup()
+
+    -- Non-blocking, so a first run compiles parsers in the background rather
+    -- than holding up startup. The installer pre-installs them, so this is
+    -- usually a no-op.
+    require("enough.parsers").install()
+
+    -- `main` does not attach highlighting itself. Neovim starts treesitter for
+    -- the handful of parsers it bundles; everything else needs this.
+    vim.api.nvim_create_autocmd("FileType", {
+      group = vim.api.nvim_create_augroup("enough-treesitter", { clear = true }),
+      desc = "Start treesitter highlighting when a parser is available",
+      callback = function(args)
+        local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
+        if lang and vim.treesitter.language.add(lang) then
+          vim.treesitter.start(args.buf, lang)
+        end
+      end,
     })
   end,
 }
