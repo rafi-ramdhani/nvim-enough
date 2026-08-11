@@ -1,23 +1,7 @@
-require("settings")
-require("keymaps")
-require("autocmds")
+-- nvim-enough: a Neovim configuration that is just enough.
+--
+-- Everything lives under lua/enough/. To change something, do not edit these
+-- files: create lua/user/init.lua instead. It is gitignored, it is merged over
+-- the defaults, and it survives `git pull`. See user.example/ for a template.
 
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
-  local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-  vim.fn.system({
-    "git",
-    "clone",
-    "--filter=blob:none",
-    "--branch=stable",
-    lazyrepo,
-    lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
-
-require("lazy").setup({
-  spec = { { import = "plugins" } },
-  change_detection = { enabled = false },
-  checker = { enabled = false },
-})
+require("enough").setup()
