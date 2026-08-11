@@ -17,15 +17,12 @@ vim.keymap.set("n", "N", "Nzzzv")
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
--- Console.log
-vim.keymap.set("n", "<leader>cl", 'yiwoconsole.log("")<esc><left><left>pa: <esc><right>a, <esc>p')
-vim.keymap.set("v", "<leader>cl", 'yoconsole.log("")<esc><left><left>pa: <esc><right>a, <esc>p')
-
--- Comment JSX
-vim.keymap.set("v", "<leader>xc", "c{/*<enter>*/}<esc><up>p")
-vim.keymap.set("v", "<leader>uxc", "dp<up><up>dddd")
-vim.keymap.set("n", "<leader>xc", '_v$<left>da{/*<space><C-r>"<space>*/}<esc>')
-vim.keymap.set("n", "<leader>uxc", "_xxxx$xxxx")
+-- The console.log mappings that used to live here are gone: echolog does the
+-- same thing in every language, with the file, line and function filled in.
+-- <leader>lp to print, `.` to repeat, <leader>lc to remove them all.
+--
+-- The JSX comment mappings moved to lua/enough/lang/typescript.lua, where they
+-- are buffer-local to the filetypes that can use them.
 
 -- Netrw
 vim.keymap.set("n", "<leader>ee", vim.cmd.Ex)

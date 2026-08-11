@@ -29,10 +29,13 @@ M.core = {
   "yaml",
 }
 
---- Every parser the current configuration wants.
+--- Every parser the current configuration wants: the core set, plus whatever
+--- the enabled language packs ask for.
 ---@return string[]
 function M.wanted()
-  return vim.deepcopy(M.core)
+  local wanted = vim.deepcopy(M.core)
+  vim.list_extend(wanted, require("enough.lang").parsers())
+  return require("enough.util").uniq(wanted)
 end
 
 --- Wanted parsers that this nvim-treesitter supports but has not installed.
