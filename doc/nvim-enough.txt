@@ -1,0 +1,239 @@
+*nvim-enough.txt*  A Neovim configuration that is just enough
+
+Author:   Rafi Ramdhani
+License:  MIT
+Requires: Neovim 0.12+
+
+==============================================================================
+CONTENTS                                                *nvim-enough-contents*
+
+    1. Introduction ........................ |nvim-enough-introduction|
+    2. Installation ........................ |nvim-enough-installation|
+    3. Layout .............................. |nvim-enough-layout|
+    4. Customising ......................... |nvim-enough-customising|
+    5. Language packs ...................... |nvim-enough-languages|
+    6. Keymaps ............................. |nvim-enough-keymaps|
+    7. Health .............................. |nvim-enough-health|
+    8. Troubleshooting ..................... |nvim-enough-troubleshooting|
+
+==============================================================================
+1. INTRODUCTION                                     *nvim-enough-introduction*
+
+nvim-enough is a starter configuration, not a framework. It is small enough to
+read in an afternoon and stops there deliberately: 19 plugins, checked in CI so
+the number cannot creep up quietly.
+
+Three things distinguish it:
+
+- It installs its own dependencies, including Neovim.
+- Nothing loads for languages you do not write.
+- Your changes live in a directory it never touches, so `git pull` cannot
+  conflict with them.
+
+==============================================================================
+2. INSTALLATION                                     *nvim-enough-installation*
+
+>sh
+    curl -fsSL https://raw.githubusercontent.com/rafi-ramdhani/nvim-enough/main/install.sh | bash
+<
+The installer prints what it will install, upgrade, back up and clone, then
+asks once. `--dry-run` shows the plan and changes nothing.
+
+Anything already at these paths is moved aside, never overwritten: >
+
+    ~/.config/nvim          -> ~/.config/nvim.bak.<timestamp>
+    ~/.local/share/nvim     -> ...bak.<timestamp>
+    ~/.local/state/nvim     -> ...bak.<timestamp>
+    ~/.cache/nvim           -> ...bak.<timestamp>
+<
+                                                     *nvim-enough-requirements*
+Neovim 0.12 or newer, on macOS or Linux. The installer also provides `git`,
+`ripgrep`, `fd`, the tree-sitter CLI and a C compiler.
+
+Note the Homebrew formula name: `tree-sitter` is the library, and
+`tree-sitter-cli` is the binary that builds parsers. Installing the wrong one
+leaves you with no syntax highlighting and no error explaining why.
+
+Windows is not supported. Use WSL2 and install inside Linux.
+
+==============================================================================
+3. LAYOUT                                                 *nvim-enough-layout*
+>
+    init.lua                    one line: require("enough").setup()
+    lua/enough/
+      config.lua                defaults, and the user overlay
+      options.lua               editor options
+      keymaps.lua               mappings that are not plugin or language bound
+      autocmds.lua
+      lazy.lua                  plugin manager bootstrap
+      parsers.lua               which treesitter parsers are wanted
+      health.lua                :checkhealth enough
+      plugins/                  one file per plugin, language-agnostic
+      lang/                     one file per language pack
+    lua/user/                   yours, gitignored
+    user.example/               template for the above
+<
+==============================================================================
+4. CUSTOMISING                                       *nvim-enough-customising*
+
+Never edit the shipped files. Create `lua/user/` instead, which is gitignored
+and merged over the defaults: >sh
+    cp -r user.example lua/user
+<
+>lua
+    -- lua/user/init.lua
+    return {
+      languages = { "go", "rust" },
+      colorscheme = "tokyonight",
+      format_on_save = true,
+    }
+<
+                                                        *nvim-enough-settings*
+languages       `string[]`. Language packs to enable. Default `{ "lua" }`.
+                See |nvim-enough-languages|.
+
+colorscheme     `string`. Applied at startup. Default `"tokyonight"`.
+
+format_on_save  `boolean`. Run the formatter on write. Default `false`,
+                because formatting a file the moment someone opens and saves it
+                is a surprising first impression.
+
+Lists replace rather than merge, so `languages = {}` really does mean none.
+
+                                                         *nvim-enough-plugins*
+Any file in `lua/user/plugins/` is picked up by lazy.nvim: >lua
+    -- lua/user/plugins/extra.lua
+    return {
+      { "folke/todo-comments.nvim", event = "VeryLazy", opts = {} },
+    }
+<
+                                                  *NVIM_ENOUGH_NO_USER*
+To find out whether a problem is yours or ours, start without your overlay: >sh
+    NVIM_ENOUGH_NO_USER=1 nvim
+<
+==============================================================================
+5. LANGUAGE PACKS                                      *nvim-enough-languages*
+
+A pack bundles a language server, the tools mason should install, treesitter
+parsers and a formatter. Nothing from a pack loads unless it is enabled, so a
+Go developer installs no Node toolchain.
+
+    c           clangd                          clang-format
+    csharp      omnisharp                       -
+    go          gopls                           goimports, gofumpt
+    lua         lua_ls                          stylua
+    php         intelephense                    -
+    python      pyright                         ruff
+    rust        rust_analyzer                   rustfmt
+    typescript  ts_ls, html, cssls,             prettier
+                cssmodules_ls, tailwindcss
+
+`lua` is enabled by default, because configuring Neovim is editing Lua.
+
+A pack is a table in `lua/enough/lang/`: >lua
+    ---@type enough.LanguagePack
+    return {
+      servers    = { gopls = {} },
+      tools      = { "gofumpt", "goimports" },
+      parsers    = { "go", "gomod" },
+      formatters = { go = { "goimports", "gofumpt" } },
+    }
+<
+==============================================================================
+6. KEYMAPS                                               *nvim-enough-keymaps*
+
+Leader is <Space>.
+
+FINDING                                           *nvim-enough-keymaps-finding*
+    <leader>sf      Search files
+    <leader>sg      Search by grep
+    <leader>sw      Search word under cursor
+    <leader>s.      Search recent files
+    <leader>sr      Resume last search
+
+CODE                                                 *nvim-enough-keymaps-code*
+    gd              Go to definition
+    <leader>fm      Format buffer
+    <leader>e       Diagnostic under cursor
+    <leader>q       Diagnostics to location list
+
+DEBUG PRINTING                                      *nvim-enough-keymaps-print*
+    <leader>lp      Print expression under cursor, or the selection
+    <leader>lP      Print above the statement
+    <leader>lv      Print every variable on the line
+    <leader>lo      Print over a motion; takes one, as in `iw`
+    <leader>ll      Breadcrumb, no values
+    <leader>lc      Delete statements in the buffer
+    <leader>lC      Delete statements in the project
+    <leader>lq      Statements to the quickfix list
+    <leader>lt      Comment statements out
+    <leader>lr      Reset the statement counter
+
+`.` repeats the last print wherever you move to. See |echolog|.
+
+EDITING AND WINDOWS                                *nvim-enough-keymaps-editing*
+    <Esc>           Clear search highlight
+    <C-d> <C-u>     Half page down/up, centred
+    n N             Next/previous match, centred
+    J K             Move selection down/up (visual)
+    <leader>ee      Open file explorer
+    <leader>hs      Split horizontally
+    <leader>vs      Split vertically
+
+COMPLETION                                     *nvim-enough-keymaps-completion*
+    <C-n> <C-p>     Next/previous item
+    <C-y>           Accept
+    <C-Space>       Show menu, then documentation
+    <C-b> <C-f>     Scroll documentation
+    <C-l> <C-h>     Next/previous snippet placeholder
+    <C-e>           Dismiss
+
+FROM NEOVIM ITSELF                               *nvim-enough-keymaps-builtin*
+
+Not defined here, and deliberately not re-mapped. They are a large part of why
+this configuration needs so few plugins.
+
+    grn             Rename symbol
+    gra             Code action
+    grr             References
+    gri             Implementation
+    gO              Document symbols
+    gc gcc          Toggle comment
+    [d ]d           Previous/next diagnostic
+    [q ]q           Previous/next quickfix item
+    an in           Select outer/inner treesitter node
+
+==============================================================================
+7. HEALTH                                                 *nvim-enough-health*
+>vim
+    :checkhealth enough
+<
+Reports the Neovim version, every external tool and what breaks without it,
+which language packs are active and which servers they provide, and which
+treesitter parsers are missing.
+
+==============================================================================
+8. TROUBLESHOOTING                               *nvim-enough-troubleshooting*
+
+No syntax highlighting~
+The tree-sitter CLI is almost certainly missing. nvim-treesitter installs
+nothing and reports success without it. >sh
+    brew install tree-sitter-cli
+<
+Then `:TSUpdate`. Confirm with `:checkhealth enough`.
+
+No completion or LSP for my language~
+Its pack is probably not enabled. Check `languages` in `lua/user/init.lua`, and
+run `:checkhealth enough` to see what is active. `:Mason` shows install status.
+
+Something broke after I changed my config~
+>sh
+    NVIM_ENOUGH_NO_USER=1 nvim
+<
+If the problem disappears, it is in `lua/user/`.
+
+I want my old configuration back~
+The installer moved it aside rather than deleting it: >sh
+    ls -d ~/.config/nvim.bak.*
+<
+vim:tw=78:ts=8:noet:ft=help:norl:
